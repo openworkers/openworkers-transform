@@ -266,6 +266,38 @@ mod tests {
             .expect("transform should succeed")
     }
 
+    fn transform_typescript(code: &str) -> String {
+        parse_worker_code(code.as_bytes(), CodeLanguage::TypeScript)
+            .expect("transform should succeed")
+    }
+
+    #[test]
+    fn test_typescript_loses_its_types_and_keeps_its_default() {
+        let result = transform_typescript(
+            "interface Init { id: number }\n\
+             const build = (init: Init): string => String(init.id);\n\
+             export default { fetch(): Response { return new Response(build({ id: 1 })); } };",
+        );
+
+        assert!(result.contains("globalThis.default"), "{result}");
+        assert!(!result.contains("interface"), "{result}");
+        assert!(!result.contains(": string"), "{result}");
+        assert!(result.contains("new Response"), "{result}");
+    }
+
+    #[test]
+    fn test_typescript_enum_and_generic_survive_as_javascript() {
+        let result = transform_typescript(
+            "enum Level { Log, Error }\n\
+             function first<T>(values: T[]): T { return values[0]; }\n\
+             export default { level: Level.Log, first };",
+        );
+
+        assert!(result.contains("globalThis.default"), "{result}");
+        assert!(!result.contains("<T>"), "{result}");
+        assert!(result.contains("Level"), "{result}");
+    }
+
     #[test]
     fn test_export_default_object() {
         let result = transform("export default { fetch() {} }");

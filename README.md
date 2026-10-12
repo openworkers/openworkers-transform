@@ -4,6 +4,7 @@ SWC-based TypeScript/JavaScript transform for OpenWorkers.
 
 - Strips TypeScript types
 - Transforms `export default { ... }` → `globalThis.default = { ... }` (required for V8 classic script evaluation)
+- Collects named exports in `globalThis.__exports`, where the runtime finds a Durable Object class
 
 ## Usage
 
@@ -24,4 +25,4 @@ let result = parse_worker_code(code, CodeLanguage::JavaScript).unwrap();
 | `export default class C {}` | `globalThis.default = class C {}` |
 | `export { x as default }` | `globalThis.default = x` |
 | Re-exports (`from '...'`) | Kept as-is |
-| Named exports (`export const`) | Kept as-is |
+| Named exports (`export class X`, `export { a as b }`) | Declarations kept, and `globalThis.__exports = { "X": X, "b": a }` at the end |
